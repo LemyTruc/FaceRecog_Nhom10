@@ -77,7 +77,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Đăng xuất</string>
+         <string>Log out</string>
         </property>
         <property name="icon">
          <iconset>
@@ -100,7 +100,7 @@
       </property>
       <widget class="QWidget" name="tabStudents">
        <attribute name="title">
-        <string>Quản lý sinh viên</string>
+        <string>Student Management</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
@@ -114,7 +114,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Thông tin sinh viên</string>
+           <string>Student information</string>
           </property>
           <layout class="QGridLayout" name="gridLayout">
            <item row="0" column="0">
@@ -421,7 +421,7 @@
           </column>
           <column>
            <property name="text">
-            <string>Số điện thoại</string>
+            <string>Phone number</string>
            </property>
           </column>
          </widget>
@@ -430,7 +430,7 @@
       </widget>
       <widget class="QWidget" name="tabSupport">
        <attribute name="title">
-        <string>Hỗ trợ</string>
+        <string>Support</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -444,7 +444,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Yêu cầu hỗ trợ</string>
+           <string>Request support</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
@@ -460,7 +460,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Tiêu đề:</string>
+                <string>Title:</string>
                </property>
               </widget>
              </item>
@@ -489,7 +489,7 @@
               </font>
              </property>
              <property name="text">
-              <string>Nội dung:</string>
+              <string>Content:</string>
              </property>
             </widget>
            </item>
@@ -537,7 +537,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Gửi yêu cầu</string>
+                <string>Submit request</string>
                </property>
                <property name="icon">
                 <iconset>
@@ -574,7 +574,7 @@
            </font>
           </property>
           <property name="title">
-           <string>Danh sách yêu cầu hỗ trợ</string>
+           <string>Support Request List</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
@@ -589,22 +589,17 @@
              </property>
              <column>
               <property name="text">
-               <string>ID</string>
+               <string>Title</string>
               </property>
              </column>
              <column>
               <property name="text">
-               <string>Tiêu đề</string>
+               <string>Content</string>
               </property>
              </column>
              <column>
               <property name="text">
-               <string>Ngày tạo</string>
-              </property>
-             </column>
-             <column>
-              <property name="text">
-               <string>Trạng thái</string>
+               <string>Date created</string>
               </property>
              </column>
             </widget>
@@ -628,7 +623,7 @@
        <string>color: #7f8c8d;</string>
       </property>
       <property name="text">
-       <string>Đã đăng nhập với tư cách Admin</string>
+       <string>Logged in as Admin</string>
       </property>
      </widget>
     </item>
