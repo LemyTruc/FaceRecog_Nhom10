@@ -13,6 +13,11 @@ import subprocess
 from face_reg import FaceRecognitionWebcam
 from eye_track import EyeTrackingWebcam
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+STUDENTS_DIR = os.path.join(PROJECT_ROOT, "students")
+
 class AttendanceSystem(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -43,23 +48,42 @@ class AttendanceSystem(QMainWindow):
         self.session_check_ins = set()
         
     def load_student_data(self):
-        """Load student data from CSV file"""
+        """Tải dữ liệu học sinh từ tệp CSV trong thư mục data"""
         students = []
-        csv_path = "/Users/ngochuynh/Downloads/FaceRecog_Nhom10/Final/student_data.csv"
+        csv_path = os.path.join(DATA_DIR, "student_data.csv")
+        
+        print(f"Đang tải dữ liệu học sinh từ: {csv_path}")
+        
+        if not os.path.exists(csv_path):
+            print(f"Lỗi: Không tìm thấy tệp {csv_path}")
+            QMessageBox.critical(self, "Lỗi", f"Không tìm thấy tệp {csv_path}")
+            return students
         
         try:
             with open(csv_path, 'r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
+                expected_fields = ['student_id', 'name', 'image_path']
+                if not all(field in reader.fieldnames for field in expected_fields):
+                    print(f"Lỗi: Tệp CSV thiếu các cột cần thiết: {expected_fields}")
+                    QMessageBox.critical(self, "Lỗi", "Tệp CSV có định dạng không đúng")
+                    return students
+                
                 for row in reader:
-                    if row['name'] and row['student_id'] and row['image_path']:
-                        students.append({
-                            "name": row['name'],
-                            "id": row['student_id'],
-                            "image_path": row['image_path']
-                        })
-                print(f"Loaded {len(students)} student records from {csv_path}")
+                    if row['student_id'] and row['name'] and row['image_path']:
+                        image_path = row['image_path']
+                        # Kiểm tra xem ảnh có tồn tại không
+                        if os.path.exists(image_path):
+                            students.append({
+                                "name": row['name'],
+                                "id": row['student_id'],
+                                "image_path": image_path
+                            })
+                        else:
+                            print(f"Cảnh báo: Không tìm thấy ảnh tại {image_path}")
+                print(f"Đã tải {len(students)} bản ghi học sinh từ {csv_path}")
         except Exception as e:
-            print(f"Error loading student data: {str(e)}")
+            print(f"Lỗi khi tải dữ liệu học sinh: {str(e)}")
+            QMessageBox.critical(self, "Lỗi", f"Lỗi khi tải dữ liệu học sinh: {str(e)}")
             students = []
             
         return students
@@ -487,30 +511,41 @@ class AttendanceSystem(QMainWindow):
         self.update_history_table()
     
     def load_attendance_history(self):
-        """Load attendance history from file"""
-        # Update attendance file path
-        self.ATTENDANCE_FILE = "/Users/ngochuynh/Downloads/FaceRecog_Nhom10/Final/attendance_history.json"
+        """Tải lịch sử điểm danh từ tệp JSON trong thư mục data"""
+        self.ATTENDANCE_FILE = os.path.join(DATA_DIR, "attendance_history.json")
         
-        # Rest of the method remains the same
+        print(f"Đang tải lịch sử điểm danh từ: {self.ATTENDANCE_FILE}")
+        
+        # Đảm bảo thư mục data tồn tại
+        os.makedirs(DATA_DIR, exist_ok=True)
+        
         if os.path.exists(self.ATTENDANCE_FILE):
             try:
                 with open(self.ATTENDANCE_FILE, "r", encoding='utf-8') as f:
                     self.attendance_history = json.load(f)
-                    print(f"Loaded {len(self.attendance_history)} attendance records")
+                    print(f"Đã tải {len(self.attendance_history)} bản ghi điểm danh")
                     self.update_history_table()
             except Exception as e:
-                print(f"Error loading attendance history: {str(e)}")
+                print(f"Lỗi khi tải lịch sử điểm danh: {str(e)}")
                 self.attendance_history = []
         else:
-            # Create empty JSON file if it doesn't exist
-            with open(self.ATTENDANCE_FILE, "w", encoding='utf-8') as f:
-                json.dump([], f)
-            self.attendance_history = []
+            # Tạo tệp JSON rỗng nếu chưa tồn tại
+            try:
+                with open(self.ATTENDANCE_FILE, "w", encoding='utf-8') as f:
+                    json.dump([], f)
+                print(f"Đã tạo tệp lịch sử điểm danh mới tại: {self.ATTENDANCE_FILE}")
+                self.attendance_history = []
+            except Exception as e:
+                print(f"Lỗi khi tạo tệp lịch sử điểm danh: {str(e)}")
+                self.attendance_history = []
     
     def save_attendance_history(self):
-        """Save attendance history to file by appending new records"""
+        """Lưu lịch sử điểm danh vào tệp JSON trong thư mục data"""
         try:
-            # Load existing records first
+            # Đảm bảo thư mục data tồn tại
+            os.makedirs(DATA_DIR, exist_ok=True)
+            
+            # Tải các bản ghi hiện có
             existing_records = []
             if os.path.exists(self.ATTENDANCE_FILE):
                 with open(self.ATTENDANCE_FILE, "r", encoding='utf-8') as f:
@@ -519,28 +554,28 @@ class AttendanceSystem(QMainWindow):
                     except json.JSONDecodeError:
                         existing_records = []
             
-            # Get only the new records (those not in existing_records)
+            # Lấy các bản ghi mới
             existing_keys = {f"{r['student_id']}_{r['date']}_{r['time']}" for r in existing_records}
             new_records = [
                 record for record in self.attendance_history 
                 if f"{record['student_id']}_{record['date']}_{record['time']}" not in existing_keys
             ]
             
-            # Combine existing and new records
+            # Kết hợp các bản ghi hiện có và mới
             all_records = existing_records + new_records
             
-            # Save all records to JSON file
+            # Lưu tất cả bản ghi vào tệp JSON
             with open(self.ATTENDANCE_FILE, "w", encoding='utf-8') as f:
                 json.dump(all_records, f, indent=4, ensure_ascii=False)
             
-            print(f"Added {len(new_records)} new attendance records")
+            print(f"Đã thêm {len(new_records)} bản ghi điểm danh mới vào {self.ATTENDANCE_FILE}")
             
-            # Update the attendance_history with all records
+            # Cập nhật lịch sử điểm danh
             self.attendance_history = all_records
             
         except Exception as e:
-            print(f"Error saving attendance: {str(e)}")
-            QMessageBox.critical(self, "Error", f"Failed to save attendance: {str(e)}")
+            print(f"Lỗi khi lưu điểm danh: {str(e)}")
+            QMessageBox.critical(self, "Lỗi", f"Không thể lưu điểm danh: {str(e)}")
     
     def update_history_table(self):
         """Update the attendance history table"""
