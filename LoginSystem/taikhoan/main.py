@@ -121,9 +121,13 @@ class giaoDienChinh(QMainWindow):
         self.pushButtonThem.clicked.connect(self.themSinhVien)
         self.pushButtonSua.clicked.connect(self.suaThongTin)
         
-        # Connect delete button (fixed: added this connection)
+        # Connect delete button
         if hasattr(self, 'pushButtonXoa'):
             self.pushButtonXoa.clicked.connect(self.deleteStudent)
+        
+        # FIXED: Connect search button properly
+        if hasattr(self, 'pushButtonTimKiem'):
+            self.pushButtonTimKiem.clicked.connect(self.searchStudent)
         
         # Initialize tables
         self.setupTables()
@@ -131,7 +135,7 @@ class giaoDienChinh(QMainWindow):
         # Load initial data
         self.hienThiDanhSachHoTro()
         self.loadAttendanceHistory()
-        self.loadStudentData()  # Make sure student data loads on startup
+        self.loadStudentData()
 
     def setupTables(self):
         # Setup Support table
@@ -143,7 +147,7 @@ class giaoDienChinh(QMainWindow):
         self.historyTable.setColumnCount(4)
         self.historyTable.setHorizontalHeaderLabels(["Name", "Student ID", "Date", "Time"])
         self.historyTable.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.historyTable.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)  # Make read-only
+        self.historyTable.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.historyTable.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.historyTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         
@@ -156,7 +160,7 @@ class giaoDienChinh(QMainWindow):
         """)
         
         # Setup Student table
-        self.tableWidgetSinhVien.setColumnCount(7)  # Updated column count
+        self.tableWidgetSinhVien.setColumnCount(7)
         self.tableWidgetSinhVien.setHorizontalHeaderLabels([
             "Mã SV", "Họ và tên", "Lớp", "Khoa", 
             "Email", "Phone number", "Image Path"
@@ -168,14 +172,12 @@ class giaoDienChinh(QMainWindow):
 
     def loadAttendanceHistory(self):
         try:
-            # Fixed: Simplified path handling
             history_file = os.path.join(CURRENT_DIR, "..", "..", "attendance_history.json")
-            print(f"Looking for attendance history at: {history_file}")  # Debug print
+            print(f"Looking for attendance history at: {history_file}")
             
             if not os.path.exists(history_file):
                 print(f"File not found: {history_file}")
-                # Create empty history file if it doesn't exist
-                os.makedirs(os.path.dirname(history_file), exist_ok=True)  # Fixed: Create parent dirs if needed
+                os.makedirs(os.path.dirname(history_file), exist_ok=True)
                 with open(history_file, 'w', encoding='utf-8') as f:
                     json.dump([], f)
                 return
@@ -224,12 +226,12 @@ class giaoDienChinh(QMainWindow):
             return
 
         try:
-            # Thông tin email
+            # Email configuration
             email_gui = "mytruckrbm@gmail.com"
             mat_khau = "lkmv fodc zsgj dklf"
             email_nhan = "trucle.31221026452@st.ueh.edu.vn"
 
-            # Cấu hình nội dung email
+            # Setup email content
             msg = MIMEMultipart()
             msg["From"] = email_gui
             msg["To"] = email_nhan
@@ -237,18 +239,16 @@ class giaoDienChinh(QMainWindow):
             body = f"Content of support request from Admin:\n\n{noi_dung}"
             msg.attach(MIMEText(body, "plain"))
 
-            # Kết nối và gửi email
+            # Connect and send email
             server = smtplib.SMTP("smtp.gmail.com", 587)
             server.starttls()
             server.login(email_gui, mat_khau)
             server.sendmail(email_gui, email_nhan, msg.as_string())
             server.quit()
 
-            # Fixed: Use absolute path for support list
             support_file = os.path.join(CURRENT_DIR, "danh_sach_ho_tro.csv")
             
-            # Lưu vào danh sách hỗ trợ
-            # Fixed: Check if file exists and create with header if not
+            # Save to support list
             file_exists = os.path.exists(support_file)
             with open(support_file, mode="a", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
@@ -258,18 +258,17 @@ class giaoDienChinh(QMainWindow):
 
             QMessageBox.information(self, "Notification", "Support request has been submitted successfully.")
 
-            # Cập nhật danh sách hỗ trợ
+            # Update support list
             self.hienThiDanhSachHoTro()
 
         except Exception as e:
-            print(f"Email error: {str(e)}")  # Debug print
+            print(f"Email error: {str(e)}")
             QMessageBox.warning(self, "Notification", f"Email sending failed: {str(e)}")
 
     def hienThiDanhSachHoTro(self):
         try:
             support_file = os.path.join(CURRENT_DIR, "danh_sach_ho_tro.csv")
             if not os.path.exists(support_file):
-                # Create empty file with headers
                 with open(support_file, mode="w", newline="", encoding="utf-8") as file:
                     writer = csv.writer(file)
                     writer.writerow(["Title", "Content", "Time"])
@@ -283,11 +282,11 @@ class giaoDienChinh(QMainWindow):
             self.tableWidgetHoTro.setRowCount(len(danh_sach))
             for row_index, row_data in enumerate(danh_sach):
                 for col_index, cell_data in enumerate(row_data):
-                    if col_index < 3:  # Ensure we don't exceed column count
+                    if col_index < 3:
                         self.tableWidgetHoTro.setItem(row_index, col_index, QTableWidgetItem(cell_data))
 
         except Exception as e:
-            print(f"Error displaying support list: {str(e)}")  # Debug print
+            print(f"Error displaying support list: {str(e)}")
             QMessageBox.warning(self, "Notification", f"Error loading support list: {str(e)}")
 
     def dangXuat(self):
@@ -297,7 +296,6 @@ class giaoDienChinh(QMainWindow):
 
     def themSinhVien(self):
         """Add new student with photo"""
-        # Get student info from form
         ma_sv = self.lineEditMaSV.text().strip()
         ho_ten = self.lineEditHoTen.text().strip()
         
@@ -313,7 +311,6 @@ class giaoDienChinh(QMainWindow):
             "Image files (*.jpg *.jpeg *.png)"
         )
         
-        # Fixed: Make photo optional
         if not file_name:
             reply = QMessageBox.question(
                 self, "No Photo", 
@@ -325,24 +322,19 @@ class giaoDienChinh(QMainWindow):
             new_photo_path = ""
         else:
             try:
-                # Create students directory if needed
                 os.makedirs(STUDENTS_DIR, exist_ok=True)
-                
-                # Copy photo with student ID as filename
                 photo_ext = os.path.splitext(file_name)[1]
                 new_photo_path = os.path.join(STUDENTS_DIR, f"{ma_sv}{photo_ext}")
                 copy2(file_name, new_photo_path)
             except Exception as e:
-                print(f"Error copying photo: {str(e)}")  # Debug print
+                print(f"Error copying photo: {str(e)}")
                 QMessageBox.warning(self, "Error", f"Failed to copy photo: {str(e)}")
                 new_photo_path = ""
             
         try:    
-            # Update student data CSV
             csv_path = os.path.join(DATA_DIR, "student_data.csv")
-            os.makedirs(os.path.dirname(csv_path), exist_ok=True)  # Fixed: Ensure directory exists
+            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
             
-            # Read existing data
             fieldnames = ['student_id', 'name', 'class', 'department', 'email', 'phone', 'image_path']
             students = []
             
@@ -374,26 +366,23 @@ class giaoDienChinh(QMainWindow):
                 writer.writerows(students)
             
             QMessageBox.information(self, "Success", "Student added successfully")
-            self.loadStudentData()  # Refresh the table
+            self.loadStudentData()
             self.clearForm()
             
         except Exception as e:
-            print(f"Error adding student: {str(e)}")  # Debug print
+            print(f"Error adding student: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to add student: {str(e)}")
 
     def suaThongTin(self):
         """Edit student information including photo"""
-        # Lấy mã sinh viên từ ô nhập liệu
         ma_sv = self.lineEditMaSV.text().strip()
         if not ma_sv:
-            # Nếu không có mã sinh viên, kiểm tra xem có hàng nào được chọn không
-            selected_rows = self.tableWidget.selectedItems()
+            selected_rows = self.tableWidgetSinhVien.selectedItems()
             if not selected_rows:
                 QMessageBox.warning(self, "Error", "Please select a student or enter Student ID")
                 return
             
-            # Lấy mã sinh viên từ hàng được chọn (giả sử mã SV ở cột đầu tiên)
-            ma_sv = self.tableWidget.item(selected_rows[0].row(), 0).text()
+            ma_sv = self.tableWidgetSinhVien.item(selected_rows[0].row(), 0).text()
             
         try:
             csv_path = os.path.join(DATA_DIR, "student_data.csv")
@@ -404,7 +393,6 @@ class giaoDienChinh(QMainWindow):
             students = []
             student_found = False
             
-            # Read existing data
             with open(csv_path, 'r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
                 students = list(reader)
@@ -412,12 +400,10 @@ class giaoDienChinh(QMainWindow):
                     QMessageBox.warning(self, "Error", "Student database is empty")
                     return
             
-            # Find student
             for student in students:
                 if student.get('student_id') == ma_sv:
                     student_found = True
                     
-                    # Option to update photo
                     if QMessageBox.question(self, "Update Photo",
                         "Do you want to update student's photo?",
                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
@@ -446,7 +432,6 @@ class giaoDienChinh(QMainWindow):
                 QMessageBox.warning(self, "Error", f"Student with ID {ma_sv} not found")
                 return
             
-            # Write back to CSV
             with open(csv_path, 'w', newline='', encoding='utf-8') as file:
                 fieldnames = ['student_id', 'name', 'class', 'department', 'email', 'phone', 'image_path']
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -454,10 +439,10 @@ class giaoDienChinh(QMainWindow):
                 writer.writerows(students)
             
             QMessageBox.information(self, "Success", "Student information updated successfully")
-            self.loadStudentData()  # Refresh the table
+            self.loadStudentData()
         
         except Exception as e:
-            print(f"Error updating student: {str(e)}")  # Debug print
+            print(f"Error updating student: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to update student information: {str(e)}")
 
     def clearForm(self):
@@ -475,7 +460,6 @@ class giaoDienChinh(QMainWindow):
             csv_path = os.path.join(DATA_DIR, "student_data.csv")
             fieldnames = ['student_id', 'name', 'class', 'department', 'email', 'phone', 'image_path']
             
-            # Create file if not exists
             if not os.path.exists(csv_path):
                 os.makedirs(os.path.dirname(csv_path), exist_ok=True)
                 with open(csv_path, 'w', newline='', encoding='utf-8') as file:
@@ -487,7 +471,6 @@ class giaoDienChinh(QMainWindow):
                 reader = csv.DictReader(file)
                 students = list(reader)
                 
-            # Sort students by ID
             students.sort(key=lambda x: x.get('student_id', ''))
                 
             self.tableWidgetSinhVien.setRowCount(len(students))
@@ -508,10 +491,8 @@ class giaoDienChinh(QMainWindow):
         if not selected_items:
             return
             
-        # Get row data
         row = selected_items[0].row()
         
-        # Fixed: Corrected column mapping
         try:
             self.lineEditMaSV.setText(self.tableWidgetSinhVien.item(row, 0).text())
             self.lineEditHoTen.setText(self.tableWidgetSinhVien.item(row, 1).text())
@@ -520,7 +501,7 @@ class giaoDienChinh(QMainWindow):
             self.lineEditEmail.setText(self.tableWidgetSinhVien.item(row, 4).text())
             self.lineEditSDT.setText(self.tableWidgetSinhVien.item(row, 5).text())
         except Exception as e:
-            print(f"Error filling form: {str(e)}")  # Debug print
+            print(f"Error filling form: {str(e)}")
 
     def deleteStudent(self):
         """Delete selected student"""
@@ -540,13 +521,11 @@ class giaoDienChinh(QMainWindow):
         
         if reply == QMessageBox.StandardButton.Yes:
             try:
-                # Read current data
                 csv_path = os.path.join(DATA_DIR, "student_data.csv")
                 if not os.path.exists(csv_path):
                     QMessageBox.warning(self, "Error", "Student database not found")
                     return
                     
-                # Fixed: Handle empty file
                 with open(csv_path, 'r', encoding='utf-8') as file:
                     reader = csv.DictReader(file)
                     students = list(reader)
@@ -554,7 +533,6 @@ class giaoDienChinh(QMainWindow):
                         QMessageBox.warning(self, "Error", "Student database is empty")
                         return
                 
-                # Fixed: Safely get image path and delete only existing students
                 image_path = ""
                 updated_students = []
                 student_deleted = False
@@ -570,14 +548,12 @@ class giaoDienChinh(QMainWindow):
                     QMessageBox.warning(self, "Error", "Student not found in database")
                     return
                 
-                # Write back without deleted student
                 with open(csv_path, 'w', newline='', encoding='utf-8') as file:
                     fieldnames = ['student_id', 'name', 'class', 'department', 'email', 'phone', 'image_path']
                     writer = csv.DictWriter(file, fieldnames=fieldnames)
                     writer.writeheader()
                     writer.writerows(updated_students)
                 
-                # Delete photo if exists
                 if image_path and os.path.exists(image_path):
                     try:
                         os.remove(image_path)
@@ -585,16 +561,74 @@ class giaoDienChinh(QMainWindow):
                     except Exception as e:
                         print(f"Failed to delete image: {str(e)}")
                 
-                # Refresh table
                 self.loadStudentData()
                 self.clearForm()
                 QMessageBox.information(self, "Success", "Student deleted successfully")
                 
             except Exception as e:
-                print(f"Error deleting student: {str(e)}")  # Debug print
+                print(f"Error deleting student: {str(e)}")
                 QMessageBox.critical(self, "Error", f"Failed to delete student: {str(e)}")
 
+    def searchStudent(self):
+        """FIXED: Search students and display only matching results"""
+        # Get values from input fields
+        student_id = self.lineEditMaSV.text().strip().lower()
+        name = self.lineEditHoTen.text().strip().lower()
+        class_name = self.lineEditLop.text().strip().lower()
+        department = self.lineEditKhoa.text().strip().lower()
+        email = self.lineEditEmail.text().strip().lower()
+        phone = self.lineEditSDT.text().strip().lower()
+        
+        # If all fields are empty, show all records
+        if not any([student_id, name, class_name, department, email, phone]):
+            self.loadStudentData()  # Reload all data
+            return
 
+        try:
+            csv_path = os.path.join(DATA_DIR, "student_data.csv")
+            if not os.path.exists(csv_path):
+                QMessageBox.warning(self, "Error", "Student database not found")
+                return
+
+            matching_students = []
+            
+            # Read and filter data
+            with open(csv_path, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for student in reader:
+                    # Check if student matches search criteria (case insensitive)
+                    if (
+                        (not student_id or student_id in student.get('student_id', '').lower()) and
+                        (not name or name in student.get('name', '').lower()) and
+                        (not class_name or class_name in student.get('class', '').lower()) and
+                        (not department or department in student.get('department', '').lower()) and
+                        (not email or email in student.get('email', '').lower()) and
+                        (not phone or phone in student.get('phone', '').lower())
+                    ):
+                        matching_students.append(student)
+
+            # Update table with matching results
+            fieldnames = ['student_id', 'name', 'class', 'department', 'email', 'phone', 'image_path']
+            self.tableWidgetSinhVien.setRowCount(len(matching_students))
+            
+            for row, student in enumerate(matching_students):
+                for col, field in enumerate(fieldnames):
+                    self.tableWidgetSinhVien.setItem(row, col, 
+                        QTableWidgetItem(student.get(field, '')))
+
+            # Show message with results count
+            if not matching_students:
+                QMessageBox.information(self, "Search Result", "No matching students found")
+            else:
+                QMessageBox.information(self, "Search Result", 
+                    f"Found {len(matching_students)} matching student(s)")
+                
+        except Exception as e:
+            print(f"Error searching students: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Search failed: {str(e)}")
+
+
+# Main execution
 khoiChayHeThong = QApplication(sys.argv)
 phanMem = giaoDienDangNhap()
 phanMem.show()
